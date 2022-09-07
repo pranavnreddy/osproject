@@ -1,13 +1,17 @@
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/wait.h>
+#include <unistd.h>
 
+#include "psh.h"
+
+// Macros for reading input
 #define PSH_RL_BUFSIZE 1024
 #define PSH_TOK_BUFSIZE 64
 #define PSH_TOK_DELIM " \t\r\n\a"
 
-int psh_cd(char **args);
-int psh_help(char **args);
-int psh_exit(char **args);
-
+// global variable for built-ins
 char *builtin_str[] = {"cd", "help", "exit"};
 
 int main(int argc, char **argv) {
@@ -129,7 +133,7 @@ int psh_cd(char **args) {
     if (args[1] == NULL) {
         fprintf(stderr, "psh: expected argument to \"cd\"\n");
     } else {
-        if (chdir(args[1] != 0)) {
+        if (chdir(args[1]) != 0) {
             perror("psh");
         }
     }
@@ -151,4 +155,20 @@ int psh_help(char **args) {
 
 int psh_exit(char **args) {
     return 0;
+}
+
+int psh_execute(char **args) {
+    int i;
+
+    if (args[0] == NULL) {
+        return 1;
+    }
+
+    for (i = 0; i < psh_num_builtins(); i++) {
+        if (strcmp(args[0], builtin_str[i]) == 0) {
+            return (*builtin_func[i])(args);
+        }
+    }
+
+    return psh_launch(args);
 }
